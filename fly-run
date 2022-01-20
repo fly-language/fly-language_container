@@ -7,4 +7,7 @@ if [ -z "${exists}" ]; then
     docker build -t fly:${VERSION} .
 fi
 
-docker run -d -p 3000:3000 -v "$(pwd):/home/project:cached" fly:${VERSION}
+docker run -d --name fly-container -p 3000:3000 -v "$(pwd):/home/project:cached" fly:${VERSION} > /dev/null
+echo "Container correctly created. Run"
+echo "   docker container ls"
+echo "to check the container name."
