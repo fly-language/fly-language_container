@@ -1,6 +1,7 @@
 # FLY Language Compiler
 
-FLY can be used in a container in a very simple way.
+FLY can be used in a docker container in a very simple way.
+The only requirement is to have Docker installed on your system.
 
 All you have to do is just execute the following procedure:
 1. Clone this repository
