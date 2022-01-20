@@ -1,0 +1,10 @@
+#! /bin/bash
+VERSION="debug"
+
+exists=$(docker images fly:${VERSION} | tail -n +2 | xargs)
+if [ -z "${exists}" ]; then
+    echo "Building the fly docker image (version=${VERSION})"
+    docker build -t fly:${VERSION} .
+fi
+
+docker run -d -p 3000:3000 -v "$(pwd):/home/project:cached" fly:${VERSION}
