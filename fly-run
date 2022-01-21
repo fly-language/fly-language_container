@@ -1,5 +1,5 @@
 #! /bin/bash
-VERSION="debug"
+VERSION="0.0.1"
 
 exists=$(docker images fly:${VERSION} | tail -n +2 | xargs)
 if [ -z "${exists}" ]; then
