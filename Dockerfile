@@ -17,7 +17,7 @@ RUN yarn --pure-lockfile
 RUN chmod g+rw /home && \
     mkdir -p /home/project && \
     mkdir -p /home/theia && \
-    mkdir -p /home/fly/libcle && \
+    mkdir -p /home/fly/lib && \
     chown -R node:node /home/theia && \
     chown -R node:node /home/project && \
     chown -R node:node /home/fly/lib;
