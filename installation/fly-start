@@ -1,13 +1,4 @@
 #! /bin/bash
 VERSION="0.0.1"
 
-exists=$(docker images fly:${VERSION} | tail -n +2 | xargs)
-if [ -z "${exists}" ]; then
-    echo "Building the fly docker image (version=${VERSION})"
-    docker build -t fly:${VERSION} .
-fi
-
-docker run -d --rm -p 3000:3000 -v "$(pwd):/home/project:cached" fly:${VERSION} > /dev/null
-echo "Container correctly created. Run"
-echo "   docker container ls"
-echo "to check the container name."
+docker build -t fly:${VERSION} $1
