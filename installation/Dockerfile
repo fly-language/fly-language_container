@@ -3,7 +3,7 @@ FROM node:12.18.3-alpine
 LABEL version="0.0.1"
 
 # install dependencies of the container
-RUN apk add --no-cache make pkgconfig gcc g++ python libx11-dev libxkbfile-dev libsecret-dev gradle
+RUN apk add --no-cache make pkgconfig gcc g++ python libx11-dev libxkbfile-dev libsecret-dev gradle maven
 RUN apk --no-cache add openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
 ARG version=latest
 ENV HOME /home/theia
@@ -24,9 +24,6 @@ RUN chmod g+rw /home && \
     chown -R fly:fly /home/theia && \
     chown -R fly:fly /home/project && \
     chown -R fly:fly /home/fly;
-
-# copy dependencies
-COPY ./lib /home/fly/lib
 
 # expose port and set default shell stuff
 EXPOSE 3000
