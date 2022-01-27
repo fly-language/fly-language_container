@@ -14,21 +14,21 @@ COPY package.json /home/theia
 # generate the theia IDE
 RUN yarn --pure-lockfile
 
-USER fly
-
 # create folders
 RUN chmod g+rw /home && \
     mkdir -p /home/project && \
     mkdir -p /home/theia && \
     mkdir -p /home/fly/lib && \
-    chown -R fly:fly /home/theia && \
-    chown -R fly:fly /home/project && \
-    chown -R fly:fly /home/fly;
+    chown -R node:node /home/theia && \
+    chown -R node:node /home/project && \
+    chown -R node:node /home/fly;
 
 # expose port and set default shell stuff
 EXPOSE 3000
 RUN apk add --no-cache git openssh bash
 ENV SHELL=/bin/bash \
     THEIA_DEFAULT_PLUGINS=local-dir:/home/theia/plugins
+
+USER node
 
 ENTRYPOINT [ "node", "/home/theia/src-gen/backend/main.js", "/home/project", "--hostname=0.0.0.0" ]
