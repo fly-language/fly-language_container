@@ -42,9 +42,9 @@ all FLY IDE integration like Compilation and Validation.`,
 		}
 		err = startFly(avoidBuild, workspace)
 		if err != nil {
-			fmt.Printf("Error on starting FLY server: %v\n", err)
+			fmt.Printf("%sError on starting FLY server:%s\n%v\n", BoldLine, ColorReset+ColorRed, err)
 		} else {
-			fmt.Println("FLY server succesfully started")
+			fmt.Printf("%sFLY server succesfully started.%s\nActive workspace: %s\n", BoldLine, ColorReset, BoldLine+ColorCyan+workspace)
 		}
 	},
 }
@@ -59,7 +59,7 @@ func startFly(avoidBuild bool, workspace string) error {
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer cli.Close()
 
@@ -67,7 +67,7 @@ func startFly(avoidBuild bool, workspace string) error {
 		All: true,
 	})
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	toBuild := true
@@ -79,8 +79,16 @@ func startFly(avoidBuild bool, workspace string) error {
 	}
 
 	if toBuild && !avoidBuild {
-		fmt.Println("Building fly image")
-		buildImage()
+		fmt.Printf("%sBuilding fly image%s\n", BoldLine, ColorReset)
+		err := buildImage()
+		if err != nil {
+			return err
+		}
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
 	}
 
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
@@ -89,6 +97,7 @@ func startFly(avoidBuild bool, workspace string) error {
 	}, &container.HostConfig{
 		Binds: []string{
 			fmt.Sprintf("%s:/home/project:cached", workspace),
+			fmt.Sprintf("%s/.aws:/home/theia/.aws", home),
 		},
 		AutoRemove: true,
 		PortBindings: nat.PortMap{
@@ -101,11 +110,11 @@ func startFly(avoidBuild bool, workspace string) error {
 		},
 	}, nil, nil, "fly-container")
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		panic(err)
+		return err
 	}
 
 	return nil
@@ -116,7 +125,7 @@ func buildImage() error {
 	if err != nil {
 		log.Fatal(nil)
 	}
-	defer os.RemoveAll(dir)
+	// defer os.RemoveAll(dir)
 
 	git.PlainClone(dir, false, &git.CloneOptions{
 		URL:      "https://github.com/fly-language/fly-language_container.git",
@@ -125,7 +134,8 @@ func buildImage() error {
 
 	out, err := exec.Command("docker", "build", "-t", fmt.Sprintf("fly:%s", VERSION), fmt.Sprintf("%s/installation", dir)).Output()
 	if err != nil {
-		panic(err)
+		fmt.Println(dir)
+		return err
 	}
 
 	if len(out) > 0 {

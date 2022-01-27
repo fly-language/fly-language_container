@@ -30,7 +30,7 @@ For example:
 		if info, err := os.Stat(args[0]); err == nil {
 
 			if !strings.HasSuffix(info.Name(), ".fly") {
-				fmt.Println("This is not a fly script")
+				fmt.Printf("%sCompilation failed:%s\nNot a Fly script.\n", BoldLine+ColorRed, ColorReset)
 				os.Exit(0)
 			}
 
@@ -38,11 +38,13 @@ For example:
 
 			ctx := context.Background()
 
-			flyCompile(baseName, ctx)
-			flyRun(baseName, ctx)
+			err = flyRun(baseName, ctx)
+			if err != nil {
+				fmt.Printf("%sError on running FLY script:%s\n%v\n", BoldLine, ColorReset+ColorRed, err)
+			}
 
 		} else if errors.Is(err, os.ErrNotExist) {
-			fmt.Printf("File `%s` does not exists\n", args[0])
+			fmt.Printf("%sCompilation failed:%s\nFile `%s` does not exists\n", BoldLine+ColorRed, ColorReset, args[0])
 			os.Exit(0)
 
 		} else {
@@ -57,60 +59,32 @@ func init() {
 	// TODO add flags
 }
 
-func flyCompile(fname string, ctx context.Context) {
-
+func flyRun(fname string, ctx context.Context) error {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		panic(err)
-	}
-	defer cli.Close()
-
-	compileExec, err := cli.ContainerExecCreate(ctx, "fly-container", types.ExecConfig{
-		WorkingDir: "/home/project/src-gen",
-		Cmd:        []string{"javac", "-classpath", "/home/fly/lib/*", fmt.Sprintf("%s.java", fname)},
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = cli.ContainerExecAttach(ctx, compileExec.ID, types.ExecStartCheck{})
-	if err != nil {
-		panic(err)
-	}
-
-	status, _ := cli.ContainerExecInspect(ctx, compileExec.ID)
-	for status.Running {
-		status, _ = cli.ContainerExecInspect(ctx, compileExec.ID)
-	}
-}
-
-func flyRun(fname string, ctx context.Context) {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		panic(err)
+		return err
 	}
 	defer cli.Close()
 
 	runExec, err := cli.ContainerExecCreate(ctx, "fly-container", types.ExecConfig{
-		WorkingDir:   "/home/project/src-gen",
+		WorkingDir:   "/home/project",
 		AttachStdout: true,
-		Tty:          true,
-		Cmd:          []string{"java", fname},
+		AttachStderr: true,
+		Detach:       false,
+		Cmd:          []string{"java", "-cp", "/home/fly/target/fly-project-0.0.1-jar-with-dependencies.jar", fmt.Sprintf("src-gen/%s.java", fname)},
 	})
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("container not started (you need to run `fly start` first")
 	}
 
-	hijResp, err := cli.ContainerExecAttach(ctx, runExec.ID, types.ExecStartCheck{
-		Tty: true,
-	})
+	hijResp, err := cli.ContainerExecAttach(ctx, runExec.ID, types.ExecStartCheck{})
 	if err != nil {
-		panic(err)
+		return err
 	}
+	defer hijResp.Close()
 
-	buf, err := ioutil.ReadAll(hijResp.Reader)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Print(string(buf))
+	data, _ := ioutil.ReadAll(hijResp.Reader)
+	fmt.Print(string(data))
+
+	return nil
 }

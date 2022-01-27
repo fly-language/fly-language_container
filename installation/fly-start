@@ -1,4 +1,0 @@
-#! /bin/bash
-VERSION="0.0.1"
-
-docker build -t fly:${VERSION} $1
