@@ -38,14 +38,9 @@ For example:
 
 			ctx := context.Background()
 
-			err := flyCompile(baseName, ctx)
+			err = flyRun(baseName, ctx)
 			if err != nil {
 				fmt.Printf("%sError on running FLY script:%s\n%v\n", BoldLine, ColorReset+ColorRed, err)
-			} else {
-				err = flyRun(baseName, ctx)
-				if err != nil {
-					fmt.Printf("%sError on running FLY script:%s\n%v\n", BoldLine, ColorReset+ColorRed, err)
-				}
 			}
 
 		} else if errors.Is(err, os.ErrNotExist) {
@@ -64,34 +59,6 @@ func init() {
 	// TODO add flags
 }
 
-func flyCompile(fname string, ctx context.Context) error {
-
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		panic(err)
-	}
-	defer cli.Close()
-
-	compileExec, err := cli.ContainerExecCreate(ctx, "fly-container", types.ExecConfig{
-		WorkingDir: "/home/project/src-gen",
-		Cmd:        []string{"javac", "-classpath", "/home/fly/lib/*", fmt.Sprintf("%s.java", fname)},
-	})
-	if err != nil {
-		return fmt.Errorf("container not started (you need to run `fly start` first)")
-	}
-
-	_, err = cli.ContainerExecAttach(ctx, compileExec.ID, types.ExecStartCheck{})
-	if err != nil {
-		return err
-	}
-
-	status, _ := cli.ContainerExecInspect(ctx, compileExec.ID)
-	for status.Running {
-		status, _ = cli.ContainerExecInspect(ctx, compileExec.ID)
-	}
-	return nil
-}
-
 func flyRun(fname string, ctx context.Context) error {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
@@ -100,26 +67,24 @@ func flyRun(fname string, ctx context.Context) error {
 	defer cli.Close()
 
 	runExec, err := cli.ContainerExecCreate(ctx, "fly-container", types.ExecConfig{
-		WorkingDir:   "/home/project/src-gen",
+		WorkingDir:   "/home/project",
 		AttachStdout: true,
-		Tty:          true,
-		Cmd:          []string{"java", fname},
+		AttachStderr: true,
+		Detach:       false,
+		Cmd:          []string{"java", "-cp", "/home/fly/target/fly-project-0.0.1-jar-with-dependencies.jar", fmt.Sprintf("src-gen/%s.java", fname)},
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("container not started (you need to run `fly start` first")
 	}
 
-	hijResp, err := cli.ContainerExecAttach(ctx, runExec.ID, types.ExecStartCheck{
-		Tty: true,
-	})
+	hijResp, err := cli.ContainerExecAttach(ctx, runExec.ID, types.ExecStartCheck{})
 	if err != nil {
 		return err
 	}
+	defer hijResp.Close()
 
-	buf, err := ioutil.ReadAll(hijResp.Reader)
-	if err != nil {
-		return err
-	}
-	fmt.Print(string(buf))
+	data, _ := ioutil.ReadAll(hijResp.Reader)
+	fmt.Print(string(data))
+
 	return nil
 }

@@ -79,8 +79,16 @@ func startFly(avoidBuild bool, workspace string) error {
 	}
 
 	if toBuild && !avoidBuild {
-		fmt.Println("Building fly image")
-		buildImage()
+		fmt.Printf("%sBuilding fly image%s\n", BoldLine, ColorReset)
+		err := buildImage()
+		if err != nil {
+			return err
+		}
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
 	}
 
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
@@ -89,6 +97,7 @@ func startFly(avoidBuild bool, workspace string) error {
 	}, &container.HostConfig{
 		Binds: []string{
 			fmt.Sprintf("%s:/home/project:cached", workspace),
+			fmt.Sprintf("%s/.aws:/home/theia/.aws", home),
 		},
 		AutoRemove: true,
 		PortBindings: nat.PortMap{
@@ -116,7 +125,7 @@ func buildImage() error {
 	if err != nil {
 		log.Fatal(nil)
 	}
-	defer os.RemoveAll(dir)
+	// defer os.RemoveAll(dir)
 
 	git.PlainClone(dir, false, &git.CloneOptions{
 		URL:      "https://github.com/fly-language/fly-language_container.git",
@@ -125,6 +134,7 @@ func buildImage() error {
 
 	out, err := exec.Command("docker", "build", "-t", fmt.Sprintf("fly:%s", VERSION), fmt.Sprintf("%s/installation", dir)).Output()
 	if err != nil {
+		fmt.Println(dir)
 		return err
 	}
 
