@@ -125,7 +125,7 @@ func buildImage() error {
 	if err != nil {
 		log.Fatal(nil)
 	}
-	// defer os.RemoveAll(dir)
+	defer os.RemoveAll(dir)
 
 	git.PlainClone(dir, false, &git.CloneOptions{
 		URL:      "https://github.com/fly-language/fly-language_container.git",
