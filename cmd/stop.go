@@ -20,9 +20,9 @@ var stopCmd = &cobra.Command{
 		command := exec.Command("docker", "container", "stop", "fly-container")
 		err := command.Run()
 		if err != nil {
-			fmt.Println("FLY Container is not running")
+			fmt.Printf("%sNothing to stop.%s\nFLY Container is not running\n", BoldLine, ColorReset)
 		} else {
-			fmt.Println("FLY Container stopped")
+			fmt.Printf("%sFLY Container stopped\n", BoldLine)
 		}
 
 	},

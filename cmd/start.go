@@ -42,9 +42,9 @@ all FLY IDE integration like Compilation and Validation.`,
 		}
 		err = startFly(avoidBuild, workspace)
 		if err != nil {
-			fmt.Printf("Error on starting FLY server: %v\n", err)
+			fmt.Printf("%sError on starting FLY server:%s\n%v\n", BoldLine, ColorReset+ColorRed, err)
 		} else {
-			fmt.Println("FLY server succesfully started")
+			fmt.Printf("%sFLY server succesfully started.%s\nActive workspace: %s\n", BoldLine, ColorReset, BoldLine+ColorCyan+workspace)
 		}
 	},
 }
@@ -59,7 +59,7 @@ func startFly(avoidBuild bool, workspace string) error {
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer cli.Close()
 
@@ -67,7 +67,7 @@ func startFly(avoidBuild bool, workspace string) error {
 		All: true,
 	})
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	toBuild := true
@@ -101,11 +101,11 @@ func startFly(avoidBuild bool, workspace string) error {
 		},
 	}, nil, nil, "fly-container")
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		panic(err)
+		return err
 	}
 
 	return nil
@@ -125,7 +125,7 @@ func buildImage() error {
 
 	out, err := exec.Command("docker", "build", "-t", fmt.Sprintf("fly:%s", VERSION), fmt.Sprintf("%s/installation", dir)).Output()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	if len(out) > 0 {
