@@ -1,9 +1,9 @@
 FROM node:12.18.3-alpine
 
-LABEL version="0.0.1"
+LABEL version="debug"
 
 # install dependencies of the container
-RUN apk add --no-cache make pkgconfig gcc g++ python libx11-dev libxkbfile-dev libsecret-dev zip gradle maven
+RUN apk add --no-cache make pkgconfig gcc g++ python libx11-dev libxkbfile-dev libsecret-dev zip gradle maven python-dev
 RUN apk --no-cache add openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
 ARG version=latest
 ENV HOME /home/theia
